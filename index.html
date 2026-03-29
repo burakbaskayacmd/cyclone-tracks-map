@@ -175,7 +175,7 @@
       const protocol = new pmtiles.Protocol();
       maplibregl.addProtocol("pmtiles", protocol.tile);
 
-      const tilesUrl = new URL("ibtracs.pmtiles", window.location.href).href;
+      const tilesUrl = new URL("ibtracslow.pmtiles", window.location.href).href;
 
       const map = new maplibregl.Map({
         container: "map",
