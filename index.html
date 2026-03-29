@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyclone Track App</title>
+
+    <script src="https://unpkg.com/maplibre-gl@5.15.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+    <link
+      href="https://unpkg.com/maplibre-gl@5.15.0/dist/maplibre-gl.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      html, body, #map {
+        margin: 0;
+        background:#0b1220;
+        width: 100%;
+        height: 100%;
+      }
+      #controls {
+        position: absolute;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      #controls button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        background: rgba(20, 20, 20, 0.85);
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      #controls button:hover {
+        background: rgba(40, 40, 40, 0.95);
+      }
+
+      .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+        flex: 0 0 12px;
+      }
+      .cat1 {
+        background: #8bc34a;
+      }
+      .cat2 {
+        background: #ffd166;
+      }
+
+      .cat3 {
+        background: #f4a261;
+      }
+
+      .cat4 {
+        background: #e76f51;
+      }
+
+      .cat5 {
+        background: #c71f37;
+      }
+
+      .cat3plus {
+        background: linear-gradient(90deg, #f4a261 0%, #e76f51 50%, #c71f37 100%);
+      }
+
+    </style>
+  </head>
+
+  <body>
+    
+  <div id="controls">
+    <button onclick="showAll()">All</button>
+
+    <button onclick="showCat1Only()">
+      <span class="swatch cat1"></span>
+      Cat 1
+    </button>
+
+    <button onclick="showCat2Only()">
+      <span class="swatch cat2"></span>
+      Cat 2
+    </button>
+
+    <button onclick="showCat3Only()">
+      <span class="swatch cat3"></span>
+      Cat 3
+    </button>
+
+    <button onclick="showCat4Only()">
+      <span class="swatch cat4"></span>
+      Cat 4
+    </button>
+
+    <button onclick="showCat5Only()">
+      <span class="swatch cat5"></span>
+      Cat 5
+    </button>
+
+    <button onclick="showCat3Plus()">
+      <span class="swatch cat3plus"></span>
+      Cat 3+
+    </button>
+  </div>
+
+    <div id="map"></div>
+
+    <script>
+
+       function showAll() {
+        map.setFilter("storms-line", null);
+      }
+      
+      function showCat1Only() {
+        map.setFilter("storms-line", [
+          "==",
+          ["coalesce", ["get", "USA_SSHS"], -99],
+          1
+        ]);
+      }     
+      
+      function showCat2Only() {
+        map.setFilter("storms-line", [
+          "==",
+          ["coalesce", ["get", "USA_SSHS"], -99],
+          2
+        ]);
+      }
+
+      function showCat3Only() {
+        map.setFilter("storms-line", [
+          "==",
+          ["coalesce", ["get", "USA_SSHS"], -99],
+          3
+        ]);
+      }
+
+      function showCat4Only() {
+        map.setFilter("storms-line", [
+          "==",
+          ["coalesce", ["get", "USA_SSHS"], -99],
+          4
+        ]);
+      }
+
+      function showCat5Only() {
+        map.setFilter("storms-line", [
+          "==",
+          ["coalesce", ["get", "USA_SSHS"], -99],
+          5
+        ]);
+      }
+
+      function showCat3Plus() {
+        map.setFilter("storms-line", [
+          ">=",
+          ["coalesce", ["get", "USA_SSHS"], -99],
+          3
+        ]);
+      }
+      
+
+      const protocol = new pmtiles.Protocol();
+      maplibregl.addProtocol("pmtiles", protocol.tile);
+
+      const tilesUrl = new URL("ibtracs.pmtiles", window.location.href).href;
+
+      const map = new maplibregl.Map({
+        container: "map",
+        style: "https://tiles.openfreemap.org/styles/fiord",
+        center: [0, 15],
+        zoom: 1.5
+      });
+
+      map.on("load", () => {
+        map.setProjection({ type: "globe" });
+        map.addSource("ibtracs", {
+          type: "vector",
+          url: `pmtiles://${tilesUrl}`
+        });
+
+        const firstSymbolLayerId = map
+          .getStyle()
+          .layers.find((layer) => layer.type === "symbol")?.id;
+
+        map.addLayer(
+          {
+            id: "storms-line",
+            type: "line",
+            source: "ibtracs",
+            "source-layer": "storms",
+            paint: {
+              "line-color": [
+                "interpolate",
+                ["linear"],
+                ["coalesce", ["get", "USA_SSHS"], -1],
+                -1, "#7aa6c7",
+                0, "#4dc9ff",
+                1, "#8bc34a",
+                2, "#ffd166",
+                3, "#f4a261",
+                4, "#e76f51",
+                5, "#c71f37"
+              ],
+              "line-width": [
+                "interpolate",
+                ["linear"],
+                ["coalesce", ["get", "USA_WIND"], 0],
+                0, 0.8,
+                50, 2,
+                100, 3.5,
+                150, 5
+              ],
+              "line-opacity": 0.35
+            }
+          },
+          firstSymbolLayerId
+        );
+      });
+
+      map.on("error", (e) => {
+        console.error(e);
+      });
+
+
+
+
+    </script>
+  </body>
+</html>
